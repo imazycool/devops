@@ -1,0 +1,18 @@
+# dockerfile.php-base
+FROM php:8.2-fpm-bullseye AS php-base
+
+# Speed up apt by caching and keeping layers small
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && apt-get install -y \
+      nginx \
+      mariadb-client libmariadb-dev \
+      autoconf make g++ libtool pkg-config \
+      curl unzip git procps \
+    && docker-php-ext-install mysqli pdo pdo_mysql \
+    && pecl install grpc protobuf \
+    && docker-php-ext-enable mysqli grpc protobuf \
+    && apt-get purge -y --auto-remove autoconf make g++ libtool pkg-config \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Composer (cached)
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer

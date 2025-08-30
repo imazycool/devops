@@ -1,0 +1,6 @@
+version: v1
+plugins:
+  - plugin: buf.build/protocolbuffers/php
+    out: php_client
+  - plugin: buf.build/grpc/php
+    out: php_client

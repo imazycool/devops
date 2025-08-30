@@ -1,0 +1,25 @@
+*.tar
+*.log
+vendor/
+node_modules/
+/image-back_up/
+*.tar
+# Ignore Docker image tar files
+
+# docker artifacts
+*.tar
+*.img
+
+# composer
+/vendor/
+/composer.lock
+
+# python
+__pycache__/
+*.pyc
+
+# misc
+.DS_Store
+
+*/keys/*
+lay-ansible/ansible/keys/*

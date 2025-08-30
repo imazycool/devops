@@ -1,0 +1,107 @@
+## --> for microservices  
+FROM python:3.11-slim as db-service
+
+# Set work directory
+WORKDIR /app
+
+# Install required Python packages
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy the proto files & service code
+COPY *.py .
+COPY student.proto .
+
+# Expose gRPC port
+EXPOSE 50051
+
+# Start the gRPC server
+CMD ["python", "student_service.py"]
+# CMD ["python", "server.py"]
+
+###########################################################
+
+## --> for database image 
+# using mariaDB
+FROM mariadb:11.3 as db 
+
+# Set environment variables (empty password)ls
+# ENV MYSQL_ALLOW_EMPTY_PASSWORD=yes
+# ENV MYSQL_DATABASE=student
+
+#copy sql files in database folder 
+COPY ./app/student.sql /docker-entrypoint-initdb.d/
+
+EXPOSE 3306 
+###########################################################
+
+# ## PHP-fpm image 
+# FROM php:8.2-fpm-bullseye AS php-app
+
+# # RUN apt-get update && apt-get install -y \
+# #     git curl unzip autoconf make g++ libtool pkg-config mariadb-client mariadb-dev dos2unix \
+# #     && docker-php-ext-install mysqli pdo pdo_mysql \
+# #     && docker-php-ext-enable mysqli \
+# #     && pecl install grpc protobuf \
+# #     && docker-php-ext-enable grpc protobuf \
+# #     && apt-get clean && rm -rf /var/lib/apt/lists/* 
+
+# # Install only build tools + dev libs temporarily
+# RUN apt-get update && apt-get install -y \
+#     autoconf make g++ libtool pkg-config \
+#     mariadb-client libmariadb-dev \
+#     && docker-php-ext-install mysqli pdo pdo_mysql \
+#     && pecl install grpc protobuf \
+#     && docker-php-ext-enable mysqli grpc protobuf \
+#     # cleanup: remove build dependencies
+#     && apt-get purge -y --auto-remove autoconf make g++ libtool pkg-config \
+#     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# # Copy PHP app
+# COPY ./app /var/www/html
+
+# # Copy main nginx.conf
+# COPY nginx.conf /etc/nginx/nginx.conf
+
+# # Fix potential Windows CRLF line endings in PHP files
+# RUN find /var/www/html -type f -name "*.php" -exec dos2unix {} \;
+
+# # Set working directory
+# WORKDIR /var/www/html
+
+# # Copy site config
+# COPY default.conf /etc/nginx/conf.d/default.conf
+
+# EXPOSE 80
+
+# CMD php-fpm -D && nginx -g 'daemon off;'
+
+###########################################################
+FROM php:8.2-fpm-bullseye AS php-app
+
+RUN apt-get update && apt-get install -y nginx
+
+RUN apt-get update && apt-get install -y \
+    autoconf make g++ libtool pkg-config \
+    mariadb-client libmariadb-dev 
+
+RUN docker-php-ext-install mysqli pdo pdo_mysql \
+    && pecl install grpc protobuf 
+
+RUN  docker-php-ext-enable mysqli grpc protobuf \
+    && apt-get purge -y --auto-remove autoconf make g++ libtool pkg-config \
+    && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+COPY ./app /var/www/html
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY default.conf /etc/nginx/conf.d/default.conf
+
+RUN find /var/www/html -type f -name "*.php" -exec dos2unix {} \;
+
+WORKDIR /var/www/html
+
+EXPOSE 80
+# CMD php-fpm -D && nginx -g 'daemon off;'
+CMD ["sh", "-c", "php-fpm && nginx -g 'daemon off;'"]
+
+#######################################################

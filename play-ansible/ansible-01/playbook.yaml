@@ -1,0 +1,29 @@
+---
+- name: configure - centos 
+  hosts: centos
+  become: true 
+  tasks:
+    - name: install httpd 
+      yum:
+        name: httpd 
+        state: present
+    - name: start httpd service 
+      service:
+          name: httpd
+          state: started 
+          enabled: true 
+
+
+- name: configure - ubuntu
+  hosts: ubuntu 
+  become: true 
+  tasks: 
+    - name: install apache-2 - euals to httpd 
+      apt:
+        name: apache2 
+        state: present
+    - name: start apche2 service 
+      service: 
+        name: apache2 
+        state: started 
+        enabled: true 

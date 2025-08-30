@@ -1,0 +1,103 @@
+---
+- name: Setup MariaDB root password and user
+  hosts: centos
+  become: true
+  vars:
+    mariadb_root_password: "4223"
+    db_name: students_db
+    db_user: student_user
+    db_password: student_pass
+
+  tasks:
+    - name: Ensure MariaDB is installed
+      yum:
+        name: mariadb-server
+        state: present
+
+    - name: Ensure PyMySQL is installed
+      pip:
+        name: pymysql
+        executable: pip3
+
+    - name: Ensure MariaDB service is started and enabled
+      service:
+        name: mariadb
+        state: started
+        enabled: yes
+
+    # - name: Check if root password is already set
+    #   command: mysql -u root -e "SELECT 1;"
+    #   register: root_access
+    #   ignore_errors: yes
+
+    # - name: Reset root password if not set (MariaDB >= 10.4 uses global_priv)
+    #   command: >
+    #     mysql -u root --skip-password
+    #     -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '{{ mariadb_root_password }}';"
+    #   when: root_access.rc != 0
+    #   ignore_errors: yes
+
+
+    # community.mysql.mysql_user module 
+    ################################################
+    - name: Ensure root can log in with password
+      community.mysql.mysql_user:
+        name: root
+        host: localhost
+        password: "{{ mariadb_root_password }}"
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        column_case_sensitive: false 
+        # check_implicit_admin: true
+        # priv: "*.*:ALL,GRANT"
+
+    - name: Ensure student_user exists
+      community.mysql.mysql_user:
+        name: "{{ db_user }}"
+        password: "{{ db_password }}"
+        # host: "%"
+        # priv: "{{ db_name }}.*:ALL"
+        state: present
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        column_case_sensitive: false 
+        # check_implicit_admin: true
+
+
+    # community.mysql.mysql_db module 
+    ################################################
+    - name: Ensure students_db exists
+      community.mysql.mysql_db:
+        name: "{{ db_name }}"
+        state: present
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        # column_case_sensitive: false 
+        # check_implicit_admin: true
+
+    
+    # community.mysql.mysql_query module 
+    ################################################
+    - name: Verify MariaDB root password works
+      community.mysql.mysql_query:
+        login_user: root
+        login_password: "{{ mariadb_root_password }}"
+        query: "SELECT VERSION();"
+      register: mariadb_version
+    
+
+    # show results but not save , results will be shown as logs 
+    ################################################
+    - name: Verify student_user can connect
+      community.mysql.mysql_query:
+        login_user: "{{ db_user }}"
+        login_password: "{{ db_password }}"
+        query: "SHOW DATABASES;"
+      register: db_list
+    
+    # output of register  
+    ################################################    
+    - debug:
+        var: mariadb_version.query_result
+    - debug: 
+        var: db_list.query_result

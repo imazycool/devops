@@ -1,0 +1,44 @@
+---
+- name: configure ubntu 
+  hosts: ubuntu 
+  become: true 
+  tasks: 
+    - name: install nginx 
+      apt: 
+        name: nginx 
+        state: present 
+    - name: install apache2 
+      apt: 
+        name: apache2 
+        state: latest 
+    
+    
+    - name: start service apache2 
+      service:
+        name: apache2 
+        state: started 
+        enabled: true 
+    - name: stop httpd service 
+      service: 
+        name: apache2 
+        state: stopped 
+    - name: start service nginx 
+      service: 
+        name: nginx
+        state: started 
+        enabled: true 
+    - name: stop nginx service 
+      service: 
+        name: nginx 
+        state: stopped 
+
+    - name: uninstall nginx 
+      apt: 
+        name: nginx 
+        state: absent 
+    - name: uninstall apache2 
+      apt: 
+        name: apache2 
+        state: absent 
+
+    

@@ -1,0 +1,121 @@
+# --- Generate PHP gRPC stubs (multi-arch) ---
+# This image includes protoc + grpc_php_plugin and works on arm64/amd64
+FROM ghcr.io/namely/docker-protoc:1.57_1 AS gen-php
+WORKDIR /work
+# bring in just the proto
+COPY app/student.proto .
+# generate stubs into /work/php_client
+RUN mkdir -p php_client && \
+    protoc -I. \
+      --php_out=php_client \
+      --grpc_out=php_client \
+      --plugin=protoc-gen-grpc=/usr/bin/grpc_php_plugin \
+      student.proto
+
+# --- Composer builder stage ---
+FROM composer:2 AS php-deps
+WORKDIR /app
+COPY app/composer.json app/composer.lock ./
+RUN composer install --no-dev --prefer-dist --no-interaction --no-progress --optimize-autoloader
+
+# ===============================
+# gRPC Microservice (Python)
+# ===============================
+# FROM python:3.11-slim AS db-service
+# WORKDIR /app
+
+# # Optional CLI for debugging MySQL
+# RUN apt-get update && apt-get install -y mariadb-client && rm -rf /var/lib/apt/lists/*
+
+# # Python dependencies
+# COPY requirements.txt .
+# RUN pip install --no-cache-dir -r requirements.txt
+
+# # Service code + proto
+# COPY student.proto .
+# COPY *.py .
+
+# # Generate Python stubs (always up-to-date inside container)
+# RUN python -m grpc_tools.protoc \
+#     -I. \
+#     --python_out=. \
+#     --grpc_python_out=. \
+#     student.proto
+
+# EXPOSE 50051
+# CMD ["python", "student_service.py"]
+
+
+# ===============================
+# gRPC Microservice (Python)
+# ===============================
+FROM python:3.11-slim AS db-service
+WORKDIR /app
+
+# Optional: CLI for quick DB checks
+RUN apt-get update && apt-get install -y mariadb-client && rm -rf /var/lib/apt/lists/*
+
+# --- IMPORTANT: use compatible, pinned versions ---
+# grpcio-tools 1.65.1 requires protobuf >=5.26.1,<6
+# Your service also uses reflection.
+RUN pip install --no-cache-dir \
+    "protobuf>=5.26.1,<6" \
+    "grpcio==1.65.1" \
+    "grpcio-tools==1.65.1" \
+    "grpcio-reflection==1.65.1" \
+    "mysql-connector-python"
+
+# Service code + proto
+COPY student.proto .
+COPY *.py .
+
+# Generate Python stubs at build time
+RUN python -m grpc_tools.protoc \
+    -I . \
+    --python_out=. \
+    --grpc_python_out=. \
+    student.proto
+
+EXPOSE 50051
+
+# Helpful for immediate log flush (optional)
+ENV PYTHONUNBUFFERED=1
+
+CMD ["python", "student_service.py"]
+
+
+# ===============================
+# PHP-FPM + Nginx Frontend
+# ===============================
+FROM azyraz/imazy-php-base:8.2 AS php-app
+WORKDIR /var/www/html
+
+# Install Nginx (base already has PHP-FPM + extensions + composer)
+RUN apt-get update && apt-get install -y nginx && rm -rf /var/lib/apt/lists/*
+
+# Copy Nginx configs
+COPY nginx.conf /etc/nginx/nginx.conf
+COPY default.conf /etc/nginx/conf.d/default.conf
+
+# Copy Composer files & install dependencies
+COPY composer.json composer.lock* ./
+RUN composer install --no-dev --optimize-autoloader || true
+
+# Copy PHP app code (includes pre-generated php_client stubs)
+COPY ./app ./app
+COPY ./php_client ./php_client
+# copy generated stubs from gen stage
+COPY --from=gen-php /work/php_client ./php_client
+# copy vendor from composer stage
+COPY --from=php-deps /app/vendor ./vendor
+
+# Start script
+COPY start.sh /start.sh
+RUN chmod +x /start.sh
+
+EXPOSE 80
+CMD ["/start.sh"]
+
+
+
+

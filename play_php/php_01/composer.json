@@ -1,0 +1,9 @@
+{
+  "require": {
+    "grpc/grpc": "^1.65",
+    "google/protobuf": "^4.27"
+  },
+  "autoload": {
+    "classmap": ["php_client/"]
+  }
+}

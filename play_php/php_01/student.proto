@@ -1,0 +1,28 @@
+syntax = "proto3";
+
+package Student;
+
+import "google/protobuf/empty.proto";
+
+service StudentService {
+  rpc GetStudent(StudentRequest) returns (StudentResponse);
+  rpc ListStudents(google.protobuf.Empty) returns (StudentListResponse);
+}
+
+message StudentRequest {
+  int32 id = 1;
+}
+
+message StudentResponse {
+  Student student = 1;
+}
+
+message StudentListResponse {
+  repeated Student students = 1;
+}
+
+message Student {
+  int32 id = 1;
+  string name = 2;
+  string department = 3;
+}

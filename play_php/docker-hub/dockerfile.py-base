@@ -1,0 +1,13 @@
+# dockerfile.py-base
+FROM python:3.11-slim AS py-base
+WORKDIR /app
+
+# apt cache + only tools you need
+RUN --mount=type=cache,target=/var/cache/apt \
+    apt-get update && apt-get install -y mariadb-client && \
+    rm -rf /var/lib/apt/lists/*
+
+# Install Python deps with cache
+COPY requirements.txt .
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir -r requirements.txt
