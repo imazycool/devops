@@ -19,6 +19,22 @@
             - ansible_host 
             - ansible_ssh_private_keys : <path>
 
+
+--- 
+# types of variables 
+1. playbook variables --> defined inside playbook, scope within playbook.yaml 
+2. ansible_variables --> ansible configuration variables, ansible_user, .cfg variables 
+3. inventory file based variables --> inventory file has definition of <host_01>, <group_01>
+    - these can be defined in two major directory 1). group_vars 2). host_vars 
+    - group_vars directory will have subdirectory for <group_01> and *<all>* for all hosts defined inside inventory file.
+    - host_vars directory will have --> <host_01> subdirectory to store their respective variables. 
+4. fact varible --> derrived from setup module 
+    - gathering_facts is default module runs to check the existing status of remote/ target machine 
+    - ansible_os_family/ ansible_default_ipv4 
+5. register variables --> storing ouput in variable , run time variable 
+    - so it can be called and use for decision making / debug purpose 
+
+
 ---
 # important commands 
 
@@ -81,6 +97,8 @@
                 - <group_02> :
                     - hosts: 
                         host_02
-                        host_05 
+                        host_05
+
+ 
 
 
