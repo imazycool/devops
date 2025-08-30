@@ -33,7 +33,10 @@
     - ansible_os_family/ ansible_default_ipv4 
 5. register variables --> storing ouput in variable , run time variable 
     - so it can be called and use for decision making / debug purpose 
-
+    - debug is used to print the variable, debug has two options 
+        - var : <variable_name> , just call the name of var and it will be printed
+        - msg : " some texts {{<variable_name>}} " --> formating of variable or static msg can be printed 
+        
 
 ---
 # important commands 
