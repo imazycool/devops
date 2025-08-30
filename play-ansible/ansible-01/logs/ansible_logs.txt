@@ -1,0 +1,14 @@
+2025-08-31 02:30:48,219 p=28319 u=ajay n=ansible INFO| nexus | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3.8"
+    },
+    "changed": false,
+    "ping": "pong"
+}
+2025-08-31 02:30:48,290 p=28319 u=ajay n=ansible INFO| server | SUCCESS => {
+    "ansible_facts": {
+        "discovered_interpreter_python": "/usr/bin/python3.9"
+    },
+    "changed": false,
+    "ping": "pong"
+}
